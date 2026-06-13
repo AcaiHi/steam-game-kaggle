@@ -14,6 +14,7 @@ def run(objective: Callable, n_dims: int, cfg: dict, perturb_fn=None) -> tuple[l
 
     # Initialise population in [0, 1]
     pop = np.random.rand(pop_size, n_dims)
+    pop[0] = _initial_solution(n_dims, cfg)
     fitness = np.array([objective(ind) for ind in pop])
 
     # Sort: best (lowest) first
@@ -69,3 +70,10 @@ def run(objective: Callable, n_dims: int, cfg: dict, perturb_fn=None) -> tuple[l
             g_best_pos   = pop[0].copy()
 
     return g_best_pos.tolist(), float(g_best_score)
+
+
+def _initial_solution(n_dims: int, cfg: dict) -> np.ndarray:
+    init_cfg = cfg.get("initial_solution", {})
+    if init_cfg.get("enabled", False) and init_cfg.get("method", "midpoint") == "midpoint":
+        return np.full(n_dims, float(init_cfg.get("value", 0.5)))
+    return np.random.rand(n_dims)

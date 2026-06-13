@@ -1,11 +1,10 @@
-algorithm: hho
+representation: assignment
+algorithm: ga
+run_name: assign_ga
 iterations: 100
 population: 10
-
-initial_solution:
-  enabled: true
-  method: midpoint
-  value: 0.5
+seed: 42
+n_colors: 8
 
 sample_filter:
   enabled: true
@@ -36,9 +35,6 @@ objective:
   inter_weight: 1.0
   penalty_per_missing: 0.5
 
-adaptive:
-  enabled: false
-
 mlflow:
-  experiment_name: phase1_clustering
+  experiment_name: phase1_assignment
   tracking_uri: sqlite:///mlflow.db

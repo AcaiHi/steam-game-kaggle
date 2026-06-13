@@ -14,6 +14,7 @@ def run(objective: Callable, n_dims: int, cfg: dict, perturb_fn=None) -> tuple[l
 
     # Initialise hawks in [0, 1]
     X = np.random.rand(pop_size, n_dims)
+    X[0] = _initial_solution(n_dims, cfg)
 
     rabbit_pos    = np.zeros(n_dims)
     rabbit_energy = np.inf
@@ -93,6 +94,13 @@ def run(objective: Callable, n_dims: int, cfg: dict, perturb_fn=None) -> tuple[l
         t += 1
 
     return rabbit_pos.tolist(), float(rabbit_energy)
+
+
+def _initial_solution(n_dims: int, cfg: dict) -> np.ndarray:
+    init_cfg = cfg.get("initial_solution", {})
+    if init_cfg.get("enabled", False) and init_cfg.get("method", "midpoint") == "midpoint":
+        return np.full(n_dims, float(init_cfg.get("value", 0.5)))
+    return np.random.rand(n_dims)
 
 
 def _levy(n_dims: int, beta: float = 1.5) -> np.ndarray:

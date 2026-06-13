@@ -1,4 +1,4 @@
-algorithm: hho
+algorithm: ga
 iterations: 100
 population: 10
 
@@ -16,20 +16,11 @@ dimensions:
   rating:
     features: [pct_pos_total]
     aggregation: mean
-  playtime:
-    features: [average_playtime_forever]
+  engagement:
+    features: [average_playtime_forever, peak_ccu]
     aggregation: mean
     log_scale: true
-  hotness:
-    features: [peak_ccu]
-    aggregation: mean
-    log_scale: true
-
-constraints:
-  enabled: true
-  min_cluster_size: 50
-  infeasible_score: 1000000.0
-  violation_weight: 1.0
+    transform: square
 
 objective:
   intra_weight: 1.0
@@ -37,7 +28,17 @@ objective:
   penalty_per_missing: 0.5
 
 adaptive:
-  enabled: false
+  enabled: true
+  strategy: aps2
+  sigma_explore: 0.05
+  sigma_local: 0.01
+  probe_eps: 0.02
+  levy_beta: 1.5
+  direction_quality_weight: 0.3
+  min_cluster_size: 50
+  target_dominant_pct: 0.5
+  formation_weight: 1.0
+  dominant_weight: 1.0
 
 mlflow:
   experiment_name: phase1_clustering

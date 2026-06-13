@@ -36,8 +36,11 @@ def make_perturb_fn(dims: pd.DataFrame, cfg: dict) -> Callable:
     probe_eps = float(acfg.get("probe_eps",              0.02))
     levy_beta = float(acfg.get("levy_beta",              1.5))
     lam       = float(acfg.get("direction_quality_weight", 0.3))  # λ
+    strategy  = acfg.get("strategy", "aps")
+    min_size  = int(acfg.get("min_cluster_size", 50))
 
     n_dims = len([c for c in dims.columns if c != "appid"])
+    n_clusters = 2 ** n_dims
 
     def perturb_fn(x: np.ndarray, t: int, T: int) -> np.ndarray:
         progress = t / max(T - 1, 1)
@@ -54,15 +57,27 @@ def make_perturb_fn(dims: pd.DataFrame, cfg: dict) -> Callable:
 
         # ── β：群激活修正（乘上 activation_pressure）─────────────────
         labels   = assign_labels(x.tolist(), dims)
-        n_missing = 8 - len(np.unique(labels))
-        activation_pressure = n_missing / 8.0
+        if strategy == "aps2":
+            violation = _constraint_violation(labels, n_clusters, min_size)
+            activation_pressure = min(1.0, violation / (min_size * n_clusters))
+            if violation == 0:
+                activation_pressure = float(acfg.get("feasible_search_pressure", 0.2))
+        else:
+            n_missing = n_clusters - len(np.unique(labels))
+            activation_pressure = n_missing / n_clusters
         beta_eff = beta * activation_pressure
 
-        if beta_eff > 1e-6 and n_missing > 0:
+        if beta_eff > 1e-6 and activation_pressure > 0:
             current_score = evaluate(x.tolist(), dims, cfg)
-            best_d, best_sign = _find_best_direction(
-                x, dims, probe_eps, current_score, lam, cfg
-            )
+            if strategy == "aps2":
+                best_d, best_sign = _find_best_direction_aps2(
+                    x, dims, probe_eps, current_score, lam, cfg,
+                    n_clusters, min_size,
+                )
+            else:
+                best_d, best_sign = _find_best_direction(
+                    x, dims, probe_eps, current_score, lam, cfg
+                )
             step = best_sign * _levy(levy_beta)
             x[best_d] = np.clip(x[best_d] + beta_eff * step, 0.0, 1.0)
 
@@ -116,6 +131,59 @@ def _find_best_direction(
     results.sort(key=lambda r: (r[0], r[1]))
     _, _, best_d, best_sign = results[0]
     return best_d, best_sign
+
+
+def _find_best_direction_aps2(
+    x: np.ndarray,
+    dims: pd.DataFrame,
+    eps: float,
+    current_score: float,
+    lam: float,
+    cfg: dict,
+    n_clusters: int,
+    min_size: int,
+) -> tuple[int, float]:
+    """
+    APS2: guide search around the feasible region defined by min_cluster_size.
+    Infeasible candidates move toward lower violation; feasible candidates move
+    toward better objective while staying feasible.
+    """
+    n = len(x)
+    results = []
+
+    current_labels = assign_labels(x.tolist(), dims)
+    current_violation = _constraint_violation(current_labels, n_clusters, min_size)
+
+    for d in range(n):
+        for sign in (+1.0, -1.0):
+            x_probe = x.copy()
+            x_probe[d] = np.clip(x_probe[d] + sign * eps, 0.0, 1.0)
+
+            probe_labels = assign_labels(x_probe.tolist(), dims)
+            probe_violation = _constraint_violation(probe_labels, n_clusters, min_size)
+
+            if current_violation > 0:
+                violation_gain = current_violation - probe_violation
+                probe_score = evaluate(x_probe.tolist(), dims, cfg)
+                obj_improvement = current_score - probe_score
+                composite = violation_gain + lam * obj_improvement
+            elif probe_violation == 0:
+                probe_score = evaluate(x_probe.tolist(), dims, cfg)
+                composite = current_score - probe_score
+            else:
+                composite = -probe_violation
+
+            extremeness = abs(x[d] - 0.5)
+            results.append((-composite, -extremeness, d, sign))
+
+    results.sort(key=lambda r: (r[0], r[1]))
+    _, _, best_d, best_sign = results[0]
+    return best_d, best_sign
+
+
+def _constraint_violation(labels: np.ndarray, n_clusters: int, min_size: int) -> float:
+    counts = np.bincount(labels, minlength=n_clusters)
+    return float(np.maximum(0, min_size - counts).sum())
 
 
 def _levy(beta: float = 1.5) -> float:

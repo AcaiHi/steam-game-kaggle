@@ -1,4 +1,4 @@
-algorithm: hho
+algorithm: ga
 iterations: 100
 population: 10
 
@@ -16,12 +16,8 @@ dimensions:
   rating:
     features: [pct_pos_total]
     aggregation: mean
-  playtime:
-    features: [average_playtime_forever]
-    aggregation: mean
-    log_scale: true
-  hotness:
-    features: [peak_ccu]
+  engagement:
+    features: [average_playtime_forever, peak_ccu]
     aggregation: mean
     log_scale: true
 

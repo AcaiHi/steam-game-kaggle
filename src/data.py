@@ -26,6 +26,27 @@ def load_phase1_features(df: pd.DataFrame) -> pd.DataFrame:
     return df[cols].copy()
 
 
+def filter_phase1_samples(df: pd.DataFrame, cfg: dict | None = None) -> pd.DataFrame:
+    if not cfg or not cfg.get("enabled", False):
+        return df
+
+    cols = cfg.get("columns", ["average_playtime_forever", "peak_ccu"])
+    available = [c for c in cols if c in df.columns]
+    if not available:
+        return df
+
+    values = df[available].fillna(0)
+    mode = cfg.get("mode", "any_positive")
+    if mode == "any_positive":
+        mask = (values > 0).any(axis=1)
+    elif mode == "all_positive":
+        mask = (values > 0).all(axis=1)
+    else:
+        raise ValueError(f"Unknown sample_filter mode: {mode}")
+
+    return df.loc[mask].copy()
+
+
 def load_phase2_features(df: pd.DataFrame) -> pd.DataFrame:
     drop = LEAKAGE_COLS + ["estimated_owners_mid"]
     return df.drop(columns=[c for c in drop if c in df.columns]).copy()

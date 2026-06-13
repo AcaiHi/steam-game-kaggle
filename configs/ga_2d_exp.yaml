@@ -1,4 +1,4 @@
-algorithm: hho
+algorithm: ga
 iterations: 100
 population: 10
 
@@ -16,20 +16,11 @@ dimensions:
   rating:
     features: [pct_pos_total]
     aggregation: mean
-  playtime:
-    features: [average_playtime_forever]
+  engagement:
+    features: [average_playtime_forever, peak_ccu]
     aggregation: mean
     log_scale: true
-  hotness:
-    features: [peak_ccu]
-    aggregation: mean
-    log_scale: true
-
-constraints:
-  enabled: true
-  min_cluster_size: 50
-  infeasible_score: 1000000.0
-  violation_weight: 1.0
+    transform: exp
 
 objective:
   intra_weight: 1.0

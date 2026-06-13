@@ -14,6 +14,7 @@ def run(objective: Callable, n_dims: int, cfg: dict, perturb_fn=None) -> tuple[l
     mutation_rate = cfg.get("mutation_rate", 0.1)
 
     pop = np.random.rand(pop_size, n_dims)
+    pop[0] = _initial_solution(n_dims, cfg)
     scores = np.array([objective(ind) for ind in pop])
 
     for t in range(n_iter):
@@ -35,6 +36,7 @@ def run(objective: Callable, n_dims: int, cfg: dict, perturb_fn=None) -> tuple[l
 
 
 def _tournament(pop, scores, n, k=3):
+    k = min(k, len(pop))
     selected = []
     for _ in range(n):
         idx = np.random.choice(len(pop), k, replace=False)
@@ -62,3 +64,10 @@ def _elitism(old, old_s, new, new_s):
     scores = np.concatenate([old_s, new_s])
     idx = np.argsort(scores)[:len(old)]
     return combined[idx], scores[idx]
+
+
+def _initial_solution(n_dims: int, cfg: dict) -> np.ndarray:
+    init_cfg = cfg.get("initial_solution", {})
+    if init_cfg.get("enabled", False) and init_cfg.get("method", "midpoint") == "midpoint":
+        return np.full(n_dims, float(init_cfg.get("value", 0.5)))
+    return np.random.rand(n_dims)

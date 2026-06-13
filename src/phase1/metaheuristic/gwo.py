@@ -13,6 +13,7 @@ def run(objective: Callable, n_dims: int, cfg: dict, perturb_fn=None) -> tuple[l
 
     # Initialise wolves in [0, 1]
     X = np.random.rand(pop_size, n_dims)
+    X[0] = _initial_solution(n_dims, cfg)
     fitness = np.array([objective(ind) for ind in X])
 
     # Alpha, Beta, Delta: three best wolves
@@ -46,6 +47,13 @@ def run(objective: Callable, n_dims: int, cfg: dict, perturb_fn=None) -> tuple[l
                 delta_pos, delta_score = X[i].copy(), fitness[i]
 
     return alpha_pos.tolist(), float(alpha_score)
+
+
+def _initial_solution(n_dims: int, cfg: dict) -> np.ndarray:
+    init_cfg = cfg.get("initial_solution", {})
+    if init_cfg.get("enabled", False) and init_cfg.get("method", "midpoint") == "midpoint":
+        return np.full(n_dims, float(init_cfg.get("value", 0.5)))
+    return np.random.rand(n_dims)
 
 
 def _step(

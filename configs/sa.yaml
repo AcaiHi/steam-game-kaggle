@@ -1,8 +1,16 @@
 algorithm: sa
-iterations: 200
-temperature: 1.0
-cooling_rate: 0.995
-step_size: 0.05
+iterations: 100
+population: 10
+
+initial_solution:
+  enabled: true
+  method: midpoint
+  value: 0.5
+
+sample_filter:
+  enabled: true
+  mode: all_positive
+  columns: [pct_pos_total, average_playtime_forever, peak_ccu]
 
 dimensions:
   rating:
@@ -11,9 +19,17 @@ dimensions:
   playtime:
     features: [average_playtime_forever]
     aggregation: mean
+    log_scale: true
   hotness:
     features: [peak_ccu]
     aggregation: mean
+    log_scale: true
+
+constraints:
+  enabled: true
+  min_cluster_size: 50
+  infeasible_score: 1000000.0
+  violation_weight: 1.0
 
 objective:
   intra_weight: 1.0

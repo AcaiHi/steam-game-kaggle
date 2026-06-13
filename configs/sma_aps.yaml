@@ -1,7 +1,16 @@
 algorithm: sma
-iterations: 200
-population: 50
-z: 0.03
+iterations: 100
+population: 10
+
+initial_solution:
+  enabled: true
+  method: midpoint
+  value: 0.5
+
+sample_filter:
+  enabled: true
+  mode: all_positive
+  columns: [pct_pos_total, average_playtime_forever, peak_ccu]
 
 dimensions:
   rating:
@@ -10,9 +19,17 @@ dimensions:
   playtime:
     features: [average_playtime_forever]
     aggregation: mean
+    log_scale: true
   hotness:
     features: [peak_ccu]
     aggregation: mean
+    log_scale: true
+
+constraints:
+  enabled: true
+  min_cluster_size: 50
+  infeasible_score: 1000000.0
+  violation_weight: 1.0
 
 objective:
   intra_weight: 1.0
@@ -21,11 +38,14 @@ objective:
 
 adaptive:
   enabled: true
-  sigma_explore:           0.05
-  sigma_local:             0.01
-  probe_eps:               0.02
-  levy_beta:               1.5
+  strategy: aps2
+  sigma_explore: 0.05
+  sigma_local: 0.01
+  probe_eps: 0.02
+  levy_beta: 1.5
   direction_quality_weight: 0.3
+  min_cluster_size: 50
+  feasible_search_pressure: 0.2
 
 mlflow:
   experiment_name: phase1_clustering

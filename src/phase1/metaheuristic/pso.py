@@ -11,6 +11,7 @@ def run(objective: Callable, n_dims: int, cfg: dict, perturb_fn=None) -> tuple[l
     c2 = cfg.get("social", 1.5)
 
     pos = np.random.rand(pop_size, n_dims)
+    pos[0] = _initial_solution(n_dims, cfg)
     vel = np.zeros_like(pos)
     scores = np.array([objective(p) for p in pos])
 
@@ -38,3 +39,10 @@ def run(objective: Callable, n_dims: int, cfg: dict, perturb_fn=None) -> tuple[l
             gbest_score = pbest_score[gbest_idx]
 
     return gbest_pos.tolist(), float(gbest_score)
+
+
+def _initial_solution(n_dims: int, cfg: dict) -> np.ndarray:
+    init_cfg = cfg.get("initial_solution", {})
+    if init_cfg.get("enabled", False) and init_cfg.get("method", "midpoint") == "midpoint":
+        return np.full(n_dims, float(init_cfg.get("value", 0.5)))
+    return np.random.rand(n_dims)

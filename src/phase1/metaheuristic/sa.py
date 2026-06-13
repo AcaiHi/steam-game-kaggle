@@ -9,7 +9,7 @@ def run(objective: Callable, n_dims: int, cfg: dict, perturb_fn=None) -> tuple[l
     cooling = cfg.get("cooling_rate", 0.995)
     step = cfg.get("step_size", 0.05)
 
-    current = np.random.rand(n_dims)
+    current = _initial_solution(n_dims, cfg)
     current_score = objective(current)
     best, best_score = current.copy(), current_score
     T = T0
@@ -27,3 +27,10 @@ def run(objective: Callable, n_dims: int, cfg: dict, perturb_fn=None) -> tuple[l
         T *= cooling
 
     return best.tolist(), float(best_score)
+
+
+def _initial_solution(n_dims: int, cfg: dict) -> np.ndarray:
+    init_cfg = cfg.get("initial_solution", {})
+    if init_cfg.get("enabled", False) and init_cfg.get("method", "midpoint") == "midpoint":
+        return np.full(n_dims, float(init_cfg.get("value", 0.5)))
+    return np.random.rand(n_dims)
