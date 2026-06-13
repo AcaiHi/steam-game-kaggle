@@ -1,0 +1,45 @@
+features:
+  numerical: true
+  categorical: true
+  temporal: true
+  text: false
+
+categorical:
+  mode: multi_hot        # multi_hot | count | top_k
+  top_k: 20
+
+text:
+  method: tfidf          # tfidf | embedding
+  max_features: 500
+
+# Feature Selection
+selection:
+  method: mutual_info    # variance | mutual_info | rfe | none
+  k: 50
+  threshold: 0.0         # variance 用
+  rfe_estimators: 50     # rfe 用
+  rfe_step: 0.1          # rfe 用
+
+# Feature Extraction
+extraction:
+  method: none           # pca | none
+  n_components: 50
+
+# 要跑的模型（可多選）
+models:
+  - random_forest
+  - xgboost
+  - lightgbm
+  - catboost
+  - svm
+
+# Hyperparameter Optimization
+param_optimize:
+  method: none           # optuna | random | grid | none
+  n_trials: 30           # optuna / random 用
+  cv: 3
+  timeout: 300           # optuna 用（秒）
+
+mlflow:
+  experiment_name: phase2_prediction
+  tracking_uri: sqlite:///mlflow.db

@@ -1,0 +1,13 @@
+{
+  "id": "acainkust/steam-eda-artermiloff-2025",
+  "title": "Steam EDA Artermiloff 2025",
+  "code_file": "notebook.ipynb",
+  "language": "python",
+  "kernel_type": "notebook",
+  "is_private": true,
+  "enable_gpu": false,
+  "enable_internet": true,
+  "dataset_sources": ["artermiloff/steam-games-dataset"],
+  "competition_sources": [],
+  "kernel_sources": []
+}

@@ -1,0 +1,31 @@
+algorithm: gwo
+iterations: 200
+population: 50
+
+dimensions:
+  rating:
+    features: [pct_pos_total]
+    aggregation: mean
+  playtime:
+    features: [average_playtime_forever]
+    aggregation: mean
+  hotness:
+    features: [peak_ccu]
+    aggregation: mean
+
+objective:
+  intra_weight: 1.0
+  inter_weight: 1.0
+  penalty_per_missing: 0.5
+
+adaptive:
+  enabled: true
+  sigma_explore:           0.05
+  sigma_local:             0.01
+  probe_eps:               0.02
+  levy_beta:               1.5
+  direction_quality_weight: 0.3
+
+mlflow:
+  experiment_name: phase1_clustering
+  tracking_uri: sqlite:///mlflow.db

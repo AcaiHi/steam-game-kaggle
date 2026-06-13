@@ -1,0 +1,30 @@
+algorithm: pso          # ga | pso | sa
+iterations: 200
+population: 50
+
+dimensions:
+  rating:
+    features: [pct_pos_total]
+    aggregation: mean
+  playtime:
+    features: [average_playtime_forever]
+    aggregation: mean
+  hotness:
+    features: [peak_ccu]
+    aggregation: mean
+
+objective:
+  intra_weight: 1.0
+  inter_weight: 1.0
+  penalty_per_missing: 0.5   # 固定空群懲罰（每少一群）
+
+adaptive:
+  enabled: true
+  sigma_explore: 0.05   # α：探索噪聲標準差
+  sigma_local:   0.01   # γ：細搜噪聲標準差
+  probe_eps:     0.02   # β：試探步長（用於偵測方向）
+  levy_beta:     1.5    # β：Levy flight 指數
+
+mlflow:
+  experiment_name: phase1_clustering
+  tracking_uri: sqlite:///mlflow.db

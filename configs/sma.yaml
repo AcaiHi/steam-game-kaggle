@@ -1,0 +1,27 @@
+algorithm: sma
+iterations: 200
+population: 50
+z: 0.03
+
+dimensions:
+  rating:
+    features: [pct_pos_total]
+    aggregation: mean
+  playtime:
+    features: [average_playtime_forever]
+    aggregation: mean
+  hotness:
+    features: [peak_ccu]
+    aggregation: mean
+
+objective:
+  intra_weight: 1.0
+  inter_weight: 1.0
+  penalty_per_missing: 0.5
+
+adaptive:
+  enabled: false
+
+mlflow:
+  experiment_name: phase1_clustering
+  tracking_uri: sqlite:///mlflow.db

@@ -1,0 +1,29 @@
+# Group A — Model Comparison | model=lightgbm
+features:
+  numerical: true
+  categorical: true
+  temporal: true
+  text: false
+
+categorical:
+  smoothing: 1.0
+
+selection:
+  method: mutual_info
+  k: 50
+
+extraction:
+  method: none
+
+models:
+  - lightgbm
+
+param_optimize:
+  method: none
+  cv: 3
+
+min_class_samples: 5
+
+mlflow:
+  experiment_name: p2_model_comparison
+  tracking_uri: sqlite:///mlflow.db

@@ -1,0 +1,29 @@
+# Environment
+.env
+*.env
+
+# Large data files
+datasets/
+mlruns/
+mlflow.db
+catboost_info/
+figures_export.zip
+
+# Outputs (generated)
+outputs/
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+dist/
+build/
+
+# Jupyter
+.ipynb_checkpoints/
+
+# OS
+.DS_Store
+Thumbs.db
