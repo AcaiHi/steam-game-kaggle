@@ -1,0 +1,43 @@
+representation: assignment
+algorithm: sa
+seed: 42
+n_colors: 8
+iterations: 500
+temperature: -1        # -1 = auto-calibrate via _calibrate_temperature()
+cooling_rate: 0.99
+moves_pct: 0.01        # fraction of games perturbed per iteration (SA baseline / GA mutation target)
+population: 20         # GA: diverse init (1 from init_method + 19 cycling all 4 methods)
+mutation_rate: 0.15
+crossover_rate: 0.8
+
+dimensions:
+  rating:
+    features: [pct_pos_total]
+  playtime:
+    features: [average_playtime_forever]
+    log_scale: true
+  hotness:
+    features: [peak_ccu]
+    log_scale: true
+
+constraints:
+  enabled: true
+  min_cluster_size: 50
+  infeasible_score: 1000000.0
+  violation_weight: 1.0
+
+objective:
+  intra_weight: 1.0
+  inter_weight: 1.0
+
+knn:
+  k: 5
+  amplifier: 2.0
+  reheat_rate: 1.05
+  stagnation_eps: 0.001
+
+# sa.init / sa.perturbation / sa.local_search are set programmatically by benchmark()
+
+mlflow:
+  experiment_name: phase1_assignment
+  tracking_uri: sqlite:///mlflow.db

@@ -1,63 +1,27 @@
 """
 目標函數與評估指標。
 
-- evaluate()    : 供 metaheuristic 最小化，回傳負的 (inter - intra)
-- assess()      : 分群完成後的正式評估，回傳 Silhouette、DBI、Cluster Distribution
+- evaluate_partition() : 供 assignment 最小化，回傳負的 (inter - intra)
+- assess_partition()   : 分群完成後的正式評估，回傳 Silhouette、DBI、Cluster Distribution
 """
 import numpy as np
 import pandas as pd
 from sklearn.metrics import silhouette_score, davies_bouldin_score
 
 
-def evaluate(thresholds: list[float], dims: pd.DataFrame, cfg: dict) -> float:
-    """
-    Metaheuristic 目標函數，回傳負值供最小化器使用。
-    加入空群懲罰：每少一個活躍群加 penalty_per_missing。
-    """
-    labels = assign_labels(thresholds, dims)
-    values = dims[[c for c in dims.columns if c != "appid"]].values
-    return evaluate_partition(labels, values, cfg)
-
-
 def evaluate_partition(labels: np.ndarray, values: np.ndarray, cfg: dict) -> float:
-    """
-    Generic partition objective used by both thresholding and coloring.
-    """
     n_dims = values.shape[1]
     n_clusters = int(cfg.get("n_colors", 2 ** n_dims))
-    constraint_score = _constraint_violation_score(labels, n_clusters, cfg)
-    if constraint_score is not None:
-        return constraint_score
 
     intra = _intra_variance(values, labels)
     inter = _inter_distance(values, labels)
 
     w_intra = cfg["objective"]["intra_weight"]
     w_inter = cfg["objective"]["inter_weight"]
-    base = -(w_inter * inter - w_intra * intra)
-
-    n_missing = n_clusters - len(np.unique(labels))
-    penalty = cfg["objective"].get("penalty_per_missing", 1.0) * n_missing
-    return base + penalty
-
-
-def assess(thresholds: list[float], dims: pd.DataFrame) -> dict:
-    """
-    分群結果的正式評估指標（依 spec 定義）：
-    - silhouette_score  : 越高越好，範圍 -1 ~ 1
-    - davies_bouldin    : 越低越好
-    - cluster_dist      : 各群樣本數，任一群 > 50% 時發出警示
-    """
-    labels = assign_labels(thresholds, dims)
-    values = dims[[c for c in dims.columns if c != "appid"]].values
-    return assess_partition(labels, values)
+    return -(w_inter * inter - w_intra * intra)
 
 
 def assess_partition(labels: np.ndarray, values: np.ndarray) -> dict:
-    """
-    Generic evaluation metrics for an already-labeled partition.
-    """
-
     unique, counts = np.unique(labels, return_counts=True)
     dist = {int(k): int(v) for k, v in zip(unique, counts)}
     dominant_pct = max(counts) / len(labels)
@@ -69,7 +33,7 @@ def assess_partition(labels: np.ndarray, values: np.ndarray) -> dict:
     except ValueError:
         sil, dbi = -1.0, float("inf")
 
-    result = {
+    return {
         "silhouette": sil,
         "davies_bouldin": dbi,
         "cluster_dist": dist,
@@ -77,34 +41,6 @@ def assess_partition(labels: np.ndarray, values: np.ndarray) -> dict:
         "dominant_cluster_pct": float(dominant_pct),
         "balance_warning": dominant_pct > 0.5,
     }
-    return result
-
-
-def assign_labels(thresholds: list[float], dims: pd.DataFrame) -> np.ndarray:
-    """
-    依固定編碼公式切分：cluster_id = R×4 + P×2 + H×1
-    位元順序：Rating → Playtime → Hotness
-    """
-    dim_cols = [c for c in dims.columns if c != "appid"]
-    bits = (dims[dim_cols].values > np.array(thresholds)).astype(int)
-    labels = bits @ (2 ** np.arange(len(dim_cols) - 1, -1, -1))
-    return labels
-
-
-def _constraint_violation_score(labels: np.ndarray, n_clusters: int, cfg: dict) -> float | None:
-    constraints = cfg.get("constraints", {})
-    min_size = constraints.get("min_cluster_size")
-    if not constraints.get("enabled", False) or min_size is None:
-        return None
-
-    counts = np.bincount(labels, minlength=n_clusters)
-    violation = np.maximum(0, int(min_size) - counts).sum()
-    if violation == 0:
-        return None
-
-    base_score = float(constraints.get("infeasible_score", 1_000_000.0))
-    weight = float(constraints.get("violation_weight", 1.0))
-    return base_score + weight * float(violation)
 
 
 def _intra_variance(values: np.ndarray, labels: np.ndarray) -> float:

@@ -1,11 +1,21 @@
-from .ga  import run as ga
-from .pso import run as pso
-from .sa  import run as sa
-from .sma import run as sma
-from .hho import run as hho
-from .gwo import run as gwo
+from ..assignment import run as ga
+from .kmeans import run_kmeans, run_kmeans_plus
+from .pso import run_pso
+from .sma import run_sma
+from .hho import run_hho
+from .vigpso import run_vigpso
+from .avicpso import run_avicpso
 
-REGISTRY = {"ga": ga, "pso": pso, "sa": sa, "sma": sma, "hho": hho, "gwo": gwo}
+REGISTRY = {
+    "ga":       ga,
+    "kmeans":   run_kmeans,
+    "kmeans++": run_kmeans_plus,
+    "sma":      run_sma,
+    "hho":      run_hho,
+    "pso":      run_pso,
+    "vigpso":   run_vigpso,
+    "avicpso":  run_avicpso,
+}
 
 
 def get(name: str):

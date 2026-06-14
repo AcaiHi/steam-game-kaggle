@@ -1,0 +1,15 @@
+Java code of  Harris Hawks Optimization 
+Developed by Oðuz Emrah Turgut (oeturgut@hotmail.com)
+
+Reference to the article entitled as 
+  " Heidari AA, Mirjalili S, Faris H, Aljarah I, Mafarja M, Chen H, Mafarja M, Chen H, Harris hawks optimization: Algorithm and applications,
+  Future Generation Computer Systems, 97 2019 849-872"
++ This is the simple and pure version of the " Harris Hawks Optimization   " java code . 
++ Alterations or any damage to this version of the code is not under responsibility of the developer.
++ This code is not developed for any merchandising attempts, only to guide for users those making research on metaheuristic algorithms
++ Includes multidimensional optimization benchmark functions to assess the performance of the proposed method
+  
+   
+
+
+

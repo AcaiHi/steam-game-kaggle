@@ -1,0 +1,31 @@
+representation: assignment
+algorithm: avicpso
+run_name: assign_avicpso
+seed: 42
+n_colors: 8
+iterations: 500
+population: 20
+
+# AVIC-PSO specific
+stagnation_thresh: 15      # 連續幾次未改善就觸發 Lévy 擾動
+levy_sigma_max: 0.3        # Lévy 步長最大縮放（隨迭代線性收縮至 0）
+collapse_theta: 0.6        # VIG 區塊平均邊權重門檻，超過視為群心崩塌
+n_kmeans_restarts: 5       # 預先計算幾組 K-means 解作為停滯重啟的 pool
+
+dimensions:
+  rating:
+    features: [pct_pos_total]
+  playtime:
+    features: [average_playtime_forever]
+    log_scale: true
+  hotness:
+    features: [peak_ccu]
+    log_scale: true
+
+objective:
+  intra_weight: 1.0
+  inter_weight: 1.0
+
+mlflow:
+  experiment_name: phase1_assignment
+  tracking_uri: sqlite:///mlflow.db

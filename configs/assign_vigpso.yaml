@@ -1,0 +1,25 @@
+representation: assignment
+algorithm: vigpso
+run_name: assign_vigpso
+seed: 42
+n_colors: 8
+iterations: 300
+population: 20
+
+dimensions:
+  rating:
+    features: [pct_pos_total]
+  playtime:
+    features: [average_playtime_forever]
+    log_scale: true
+  hotness:
+    features: [peak_ccu]
+    log_scale: true
+
+objective:
+  intra_weight: 1.0
+  inter_weight: 1.0
+
+mlflow:
+  experiment_name: phase1_assignment
+  tracking_uri: sqlite:///mlflow.db

@@ -1,48 +1,55 @@
-"""Particle Swarm Optimization — 最佳化三個門檻值。"""
+from __future__ import annotations
 import numpy as np
-from typing import Callable
+from typing import Tuple
+from .centroid_fitness import make_fitness, decode_labels, get_warmstart_pos
 
 
-def run(objective: Callable, n_dims: int, cfg: dict, perturb_fn=None) -> tuple[list[float], float]:
-    pop_size = cfg.get("population", 50)
-    n_iter = cfg.get("iterations", 200)
-    w = cfg.get("inertia", 0.7)
-    c1 = cfg.get("cognitive", 1.5)
-    c2 = cfg.get("social", 1.5)
+def run_pso(values: np.ndarray, cfg: dict) -> Tuple[np.ndarray, float]:
+    n_colors = int(cfg.get("n_colors", 8))
+    n_dims   = values.shape[1]
+    dim      = n_colors * n_dims
 
-    pos = np.random.rand(pop_size, n_dims)
-    pos[0] = _initial_solution(n_dims, cfg)
-    vel = np.zeros_like(pos)
-    scores = np.array([objective(p) for p in pos])
+    fitness  = make_fitness(values, n_colors)
+    warm_pos = get_warmstart_pos(values, n_colors)
 
-    pbest_pos = pos.copy()
-    pbest_score = scores.copy()
-    gbest_idx = np.argmin(scores)
-    gbest_pos = pos[gbest_idx].copy()
-    gbest_score = scores[gbest_idx]
+    n_particles = int(cfg.get("population", 20))
+    max_iter    = int(cfg.get("iterations", 500))
+    omega       = float(cfg.get("omega", 0.4))
+    c1          = float(cfg.get("c1", 1.5))
+    c2          = float(cfg.get("c2", 2.0))
+    v_max       = 0.2
 
-    for t in range(n_iter):
-        r1, r2 = np.random.rand(pop_size, n_dims), np.random.rand(pop_size, n_dims)
-        vel = w * vel + c1 * r1 * (pbest_pos - pos) + c2 * r2 * (gbest_pos - pos)
-        pos = np.clip(pos + vel, 0, 1)
-        if perturb_fn is not None:
-            pos = np.array([perturb_fn(p, t, n_iter) for p in pos])
-        scores = np.array([objective(p) for p in pos])
+    np.random.seed(int(cfg.get("seed", 42)))
 
-        improved = scores < pbest_score
-        pbest_pos[improved] = pos[improved]
-        pbest_score[improved] = scores[improved]
+    X = np.random.uniform(0, 1, (n_particles, dim))
+    X[0] = np.clip(warm_pos, 0, 1)
+    V = np.zeros((n_particles, dim))
 
-        if pbest_score.min() < gbest_score:
-            gbest_idx = np.argmin(pbest_score)
-            gbest_pos = pbest_pos[gbest_idx].copy()
-            gbest_score = pbest_score[gbest_idx]
+    pbest_pos = X.copy()
+    pbest_val = np.array([fitness(X[i]) for i in range(n_particles)])
 
-    return gbest_pos.tolist(), float(gbest_score)
+    gbest_idx = int(np.argmin(pbest_val))
+    gbest_pos = pbest_pos[gbest_idx].copy()
+    gbest_val = float(pbest_val[gbest_idx])
 
+    for t in range(max_iter):
+        w = omega * (1.0 - 0.6 * t / max_iter)
+        r1 = np.random.uniform(0, 1, (n_particles, dim))
+        r2 = np.random.uniform(0, 1, (n_particles, dim))
 
-def _initial_solution(n_dims: int, cfg: dict) -> np.ndarray:
-    init_cfg = cfg.get("initial_solution", {})
-    if init_cfg.get("enabled", False) and init_cfg.get("method", "midpoint") == "midpoint":
-        return np.full(n_dims, float(init_cfg.get("value", 0.5)))
-    return np.random.rand(n_dims)
+        V = w * V + c1 * r1 * (pbest_pos - X) + c2 * r2 * (gbest_pos - X)
+        V = np.clip(V, -v_max, v_max)
+        X = np.clip(X + V, 0, 1)
+
+        vals = np.array([fitness(X[i]) for i in range(n_particles)])
+        improved = vals < pbest_val
+        pbest_pos[improved] = X[improved].copy()
+        pbest_val[improved] = vals[improved]
+
+        best_idx = int(np.argmin(pbest_val))
+        if pbest_val[best_idx] < gbest_val:
+            gbest_val = float(pbest_val[best_idx])
+            gbest_pos = pbest_pos[best_idx].copy()
+
+    labels = decode_labels(gbest_pos, values, n_colors)
+    return labels, gbest_val
