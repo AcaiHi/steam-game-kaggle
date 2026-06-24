@@ -27,3 +27,16 @@ build/
 # OS
 .DS_Store
 Thumbs.db
+
+# Output logs
+out*.txt
+_out*.txt
+
+# Archives & binary outputs
+*.rar
+*.zip
+*.pdf
+
+# Generated images
+cluster_*.png
+eda_*.png
