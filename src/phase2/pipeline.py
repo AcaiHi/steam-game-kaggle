@@ -27,7 +27,8 @@ from sklearn.feature_selection import (
 )
 from sklearn.ensemble import RandomForestClassifier
 
-from .features import numerical, temporal, text
+from .features import numerical, temporal
+from .features.text import TextEncoder
 from .features.categorical import TargetEncoder
 
 # LIST + DICT cols that need target encoding
@@ -37,10 +38,10 @@ CATEGORICAL_COLS = [
 ]
 
 
-# ── Step 1: y 無關特徵 ────────────────────────────────────────────────────────
+# ── Step 1: y 無關特徵（不含 text，text 需要 fit/transform 分離）────────────
 
 def build_base_features(df: pd.DataFrame, cfg: dict) -> pd.DataFrame:
-    """數值、時間、平台特徵，不依賴 y，可在 split 前建立。"""
+    """數值、時間、平台特徵，不依賴 y，可在 split 前建立。text 不在此處理。"""
     frames = []
     feat_cfg = cfg["features"]
 
@@ -48,8 +49,6 @@ def build_base_features(df: pd.DataFrame, cfg: dict) -> pd.DataFrame:
         frames.append(numerical.build(df))
     if feat_cfg.get("temporal"):
         frames.append(temporal.build(df))
-    if feat_cfg.get("text"):
-        frames.append(text.build(df, **cfg.get("text", {})))
 
     # 平台布林欄位
     for col in ["windows", "mac", "linux"]:
@@ -59,6 +58,22 @@ def build_base_features(df: pd.DataFrame, cfg: dict) -> pd.DataFrame:
     if not frames:
         return pd.DataFrame(index=df.index)
     return pd.concat(frames, axis=1).reset_index(drop=True)
+
+
+# ── Step 1b: Text features（只在 train 上 fit）───────────────────────────────
+
+def fit_transform_text(
+    df_train: pd.DataFrame,
+    df_test: pd.DataFrame,
+    cfg: dict,
+) -> tuple[pd.DataFrame, pd.DataFrame]:
+    if not cfg["features"].get("text", False):
+        return pd.DataFrame(index=df_train.index), pd.DataFrame(index=df_test.index)
+    text_cfg = cfg.get("text", {})
+    enc = TextEncoder(max_features=text_cfg.get("max_features", 500))
+    txt_train = enc.fit(df_train).transform(df_train).reset_index(drop=True)
+    txt_test  = enc.transform(df_test).reset_index(drop=True)
+    return txt_train, txt_test
 
 
 # ── Step 3: Target Encoding（只在 train 上 fit）────────────────────────────────

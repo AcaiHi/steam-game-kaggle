@@ -19,6 +19,7 @@ from __future__ import annotations
 import numpy as np
 from typing import Any
 from sklearn.model_selection import RandomizedSearchCV, GridSearchCV, StratifiedKFold
+from sklearn.utils.class_weight import compute_sample_weight
 
 # ── 各模型的超參數搜索空間 ────────────────────────────────────────────────────
 
@@ -123,7 +124,8 @@ def optimize(model, model_name: str, X, y, cfg: dict):
     cv       = StratifiedKFold(n_splits=cv_folds, shuffle=True, random_state=42)
 
     if method == "none":
-        model.fit(X, y)
+        fit_kwargs = _fit_kwargs(model_name, y)
+        model.fit(X, y, **fit_kwargs)
         return model, {}
 
     if method == "optuna":
@@ -158,29 +160,38 @@ def _run_optuna(model, model_name, X, y, cv, opt_cfg):
 
     best_params = {**_base_params(model_name), **study.best_params}
     best_model = model.__class__(**best_params)
-    best_model.fit(X, y)
+    best_model.fit(X, y, **_fit_kwargs(model_name, y))
     return best_model, study.best_params
 
 
 def _run_random(model, model_name, X, y, cv, opt_cfg):
     n_iter = opt_cfg.get("n_trials", 30)
+    fit_params = {f"estimator__{k}": v for k, v in _fit_kwargs(model_name, y).items()}
     search = RandomizedSearchCV(
         model, PARAM_SPACES[model_name],
         n_iter=n_iter, cv=cv, scoring="f1_macro",
         random_state=42, n_jobs=-1, verbose=0,
     )
-    search.fit(X, y)
+    search.fit(X, y, **fit_params)
     return search.best_estimator_, search.best_params_
 
 
 def _run_grid(model, model_name, X, y, cv):
+    fit_params = {f"estimator__{k}": v for k, v in _fit_kwargs(model_name, y).items()}
     search = GridSearchCV(
         model, PARAM_SPACES[model_name],
         cv=cv, scoring="f1_macro",
         n_jobs=-1, verbose=0,
     )
-    search.fit(X, y)
+    search.fit(X, y, **fit_params)
     return search.best_estimator_, search.best_params_
+
+
+def _fit_kwargs(model_name: str, y) -> dict:
+    """XGBoost 需要透過 sample_weight 傳入 class weight。"""
+    if model_name == "xgboost":
+        return {"sample_weight": compute_sample_weight("balanced", y)}
+    return {}
 
 
 def _base_params(model_name: str) -> dict:
@@ -191,7 +202,6 @@ def _base_params(model_name: str) -> dict:
     if model_name == "xgboost":
         base.pop("random_state")
         base["seed"] = 42
-        base["use_label_encoder"] = False
         base["eval_metric"] = "mlogloss"
     if model_name == "lightgbm":
         base["class_weight"] = "balanced"
