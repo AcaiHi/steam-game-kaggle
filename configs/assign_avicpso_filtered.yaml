@@ -1,0 +1,36 @@
+representation: assignment
+algorithm: avicpso
+run_name: assign_avicpso_filtered
+seed: 42
+n_colors: 8
+iterations: 500
+population: 20
+
+sample_filter:
+  enabled: true
+  columns: [average_playtime_forever, peak_ccu, pct_pos_total]
+  mode: all_positive
+
+# AVIC-PSO specific
+stagnation_thresh: 15
+levy_sigma_max: 0.3
+collapse_theta: 0.6
+n_kmeans_restarts: 5
+
+dimensions:
+  rating:
+    features: [pct_pos_total]
+  playtime:
+    features: [average_playtime_forever]
+    log_scale: true
+  hotness:
+    features: [peak_ccu]
+    log_scale: true
+
+objective:
+  intra_weight: 1.0
+  inter_weight: 1.0
+
+mlflow:
+  experiment_name: phase1_assignment
+  tracking_uri: sqlite:///mlflow.db

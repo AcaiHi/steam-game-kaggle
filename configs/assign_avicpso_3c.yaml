@@ -1,8 +1,8 @@
 representation: assignment
 algorithm: avicpso
-run_name: assign_avicpso
+run_name: assign_avicpso_3c
 seed: 42
-n_colors: 8
+n_colors: 3
 iterations: 500
 population: 20
 
@@ -22,15 +22,8 @@ dimensions:
     features: [peak_ccu]
     log_scale: true
 
-fitness:
-  type: weighted       # plain | weighted
-  density_bins: 20
-  combine: mean
-  w_min: 1.0
-  w_max: 1.0
-
 objective:
-  intra_weight: 30.0
+  intra_weight: 1.0
   inter_weight: 1.0
 
 mlflow:

@@ -26,8 +26,15 @@ constraints:
   infeasible_score: 1000000.0
   violation_weight: 1.0
 
+fitness:
+  type: plain          # plain | combined | weighted | wcss | wdbi | wcombined
+  density_bins: 20     # bins per dimension for density estimation
+  combine: mean        # how to aggregate per-dim weights
+  w_min: 0.05
+  w_max: 10.0
+
 objective:
-  intra_weight: 1.0
+  intra_weight: 30.0
   inter_weight: 1.0
 
 knn:

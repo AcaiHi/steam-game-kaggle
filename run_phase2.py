@@ -13,6 +13,7 @@ from sklearn.preprocessing import LabelEncoder
 from src.data import load_raw, load_phase2_features
 from src.phase2.pipeline import (
     build_base_features,
+    fit_transform_text,
     fit_transform_categorical,
     fit_transform_selection,
     fit_transform_extraction,
@@ -74,12 +75,15 @@ def main():
     y_train  = y_train.reset_index(drop=True)
     y_test   = y_test.reset_index(drop=True)
 
-    # ── Step 3: Target Encoding（僅在 train 上 fit）──────────────────────────
+    # ── Step 3: Text + Target Encoding（僅在 train 上 fit）─────────────────────
+    print(f"Fitting text encoder on train ({len(df_train)} samples) ...")
+    txt_train, txt_test = fit_transform_text(df_train, df_test, cfg)
+
     print(f"Fitting target encoder on train ({len(df_train)} samples) ...")
     cat_train, cat_test = fit_transform_categorical(df_train, df_test, y_train, cfg)
 
-    X_train = pd.concat([X_base_train, cat_train], axis=1)
-    X_test  = pd.concat([X_base_test,  cat_test],  axis=1)
+    X_train = pd.concat([X_base_train, txt_train, cat_train], axis=1)
+    X_test  = pd.concat([X_base_test,  txt_test,  cat_test],  axis=1)
 
     # ── Step 4: Feature Selection（僅在 train 上 fit）────────────────────────
     sel_method = cfg.get("selection", {}).get("method", "none")

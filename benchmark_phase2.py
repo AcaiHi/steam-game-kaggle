@@ -20,6 +20,7 @@ warnings.filterwarnings("ignore")
 from src.data import load_raw, load_phase2_features
 from src.phase2.pipeline import (
     build_base_features,
+    fit_transform_text,
     fit_transform_categorical,
     fit_transform_selection,
     fit_transform_extraction,
@@ -110,11 +111,13 @@ def main():
     y_tr  = y_tr.reset_index(drop=True)
     y_te  = y_te.reset_index(drop=True)
 
-    # ── Step 3: Target Encoding（一次 fit，所有 selection 共用）──────────────
+    # ── Step 3: Text + Target Encoding（一次 fit，所有 selection 共用）────────
+    print("Fitting text encoder ...")
+    txt_tr, txt_te = fit_transform_text(df_tr, df_te, cfg)
     print("Fitting target encoder ...")
     cat_tr, cat_te = fit_transform_categorical(df_tr, df_te, y_tr, cfg)
-    X_full_tr = pd.concat([X_base_tr, cat_tr], axis=1)
-    X_full_te = pd.concat([X_base_te, cat_te], axis=1)
+    X_full_tr = pd.concat([X_base_tr, txt_tr, cat_tr], axis=1)
+    X_full_te = pd.concat([X_base_te, txt_te, cat_te], axis=1)
     print(f"Full feature matrix: train={X_full_tr.shape}  test={X_full_te.shape}\n")
 
     # ── Benchmark loop ────────────────────────────────────────────────────────
