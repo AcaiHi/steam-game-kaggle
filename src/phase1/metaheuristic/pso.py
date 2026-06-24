@@ -1,17 +1,23 @@
 from __future__ import annotations
 import numpy as np
 from typing import Tuple
-from .centroid_fitness import make_fitness, decode_labels, get_warmstart_pos
+from .centroid_fitness import make_fitness_fn, decode_labels, get_warmstart_pos
+
+
+def run_pso_cold(values: np.ndarray, cfg: dict) -> Tuple[np.ndarray, float]:
+    return _run_pso(values, cfg, warm=False)
 
 
 def run_pso(values: np.ndarray, cfg: dict) -> Tuple[np.ndarray, float]:
+    return _run_pso(values, cfg, warm=True)
+
+
+def _run_pso(values: np.ndarray, cfg: dict, warm: bool) -> Tuple[np.ndarray, float]:
     n_colors = int(cfg.get("n_colors", 8))
     n_dims   = values.shape[1]
     dim      = n_colors * n_dims
 
-    fitness  = make_fitness(values, n_colors)
-    warm_pos = get_warmstart_pos(values, n_colors)
-
+    fitness     = make_fitness_fn(values, n_colors, cfg)
     n_particles = int(cfg.get("population", 20))
     max_iter    = int(cfg.get("iterations", 500))
     omega       = float(cfg.get("omega", 0.4))
@@ -22,7 +28,8 @@ def run_pso(values: np.ndarray, cfg: dict) -> Tuple[np.ndarray, float]:
     np.random.seed(int(cfg.get("seed", 42)))
 
     X = np.random.uniform(0, 1, (n_particles, dim))
-    X[0] = np.clip(warm_pos, 0, 1)
+    if warm:
+        X[0] = np.clip(get_warmstart_pos(values, n_colors), 0, 1)
     V = np.zeros((n_particles, dim))
 
     pbest_pos = X.copy()

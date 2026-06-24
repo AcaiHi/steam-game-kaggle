@@ -3,7 +3,7 @@ import os, sys
 import numpy as np
 from numpy import zeros
 from typing import Tuple
-from .centroid_fitness import make_fitness, decode_labels, get_warmstart_pos
+from .centroid_fitness import make_fitness_fn, decode_labels, get_warmstart_pos
 
 _SMA_DIR = os.path.abspath(
     os.path.join(os.path.dirname(__file__), "..", "..", "..",
@@ -16,7 +16,7 @@ def run_sma(values: np.ndarray, cfg: dict) -> Tuple[np.ndarray, float]:
     n_dims   = values.shape[1]
     dim      = n_colors * n_dims
 
-    fitness  = make_fitness(values, n_colors)
+    fitness  = make_fitness_fn(values, n_colors, cfg)
     warm_pos = get_warmstart_pos(values, n_colors)
 
     if _SMA_DIR not in sys.path:

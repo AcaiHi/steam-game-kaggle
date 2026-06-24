@@ -56,6 +56,47 @@ def make_restart_pool(values: np.ndarray, n_colors: int, n_restarts: int = 5) ->
     return np.array(pool)  # (n_restarts, dim)
 
 
+def make_fitness_fn(
+    values: np.ndarray,
+    n_colors: int,
+    cfg: dict,
+    weights: "np.ndarray | None" = None,
+):
+    """Factory: dispatch to plain or weighted fitness based on cfg['fitness']['type'].
+
+    Weights are resolved in order:
+      1. explicit *weights* argument
+      2. cfg['_weights_cache']  (pre-computed by caller, e.g. benchmark loop)
+      3. computed on demand from values + cfg['fitness']
+    This avoids re-running compute_density_weights for each method when
+    values and fitness config are constant across a benchmark run.
+    """
+    fit_type = cfg.get("fitness", {}).get("type", "plain")
+    if fit_type == "combined":
+        from .weighted_fitness import make_combined_fitness
+        return make_combined_fitness(values, n_colors, cfg)
+    if fit_type in ("weighted", "wcss", "wdbi", "wcombined"):
+        from .weighted_fitness import (
+            compute_density_weights,
+            make_weighted_fitness,
+            make_wcss_fitness,
+            make_wdbi_fitness,
+            make_wcombined_fitness,
+        )
+        if weights is None:
+            weights = cfg.get("_weights_cache")
+        if weights is None:
+            weights = compute_density_weights(values, cfg)
+        if fit_type == "wcss":
+            return make_wcss_fitness(values, n_colors, weights)
+        if fit_type == "wdbi":
+            return make_wdbi_fitness(values, n_colors, weights)
+        if fit_type == "wcombined":
+            return make_wcombined_fitness(values, n_colors, weights, cfg)
+        return make_weighted_fitness(values, n_colors, weights)
+    return make_fitness(values, n_colors)
+
+
 def decode_labels(pos: np.ndarray, values: np.ndarray, n_colors: int) -> np.ndarray:
     """從最佳 centroid 向量取得每筆資料的 cluster id。"""
     n_dims = values.shape[1]

@@ -21,7 +21,11 @@ def evaluate_partition(labels: np.ndarray, values: np.ndarray, cfg: dict) -> flo
     return -(w_inter * inter - w_intra * intra)
 
 
-def assess_partition(labels: np.ndarray, values: np.ndarray) -> dict:
+def assess_partition(
+    labels: np.ndarray,
+    values: np.ndarray,
+    weights: "np.ndarray | None" = None,
+) -> dict:
     unique, counts = np.unique(labels, return_counts=True)
     dist = {int(k): int(v) for k, v in zip(unique, counts)}
     dominant_pct = max(counts) / len(labels)
@@ -33,14 +37,63 @@ def assess_partition(labels: np.ndarray, values: np.ndarray) -> dict:
     except ValueError:
         sil, dbi = -1.0, float("inf")
 
+    wdbi = weighted_davies_bouldin_score(labels, values, weights) if (weights is not None and n_active >= 2) else None
+
     return {
         "silhouette": sil,
         "davies_bouldin": dbi,
+        "weighted_davies_bouldin": wdbi,
         "cluster_dist": dist,
         "n_active_clusters": int(n_active),
         "dominant_cluster_pct": float(dominant_pct),
         "balance_warning": dominant_pct > 0.5,
     }
+
+
+def weighted_davies_bouldin_score(
+    labels: np.ndarray,
+    values: np.ndarray,
+    weights: np.ndarray,
+    eps: float = 1e-10,
+) -> float:
+    """Weighted Davies-Bouldin Index.
+
+    WDBI = (1/K) Σ_k  max_{j≠k}  (s_k^w + s_j^w) / d_kj^w
+
+    s_k^w  = Σ_{i∈Ck} w_i ‖x_i − μ_k^w‖ / Σ_{i∈Ck} w_i   (weighted mean distance)
+    μ_k^w  = Σ_{i∈Ck} w_i x_i / Σ_{i∈Ck} w_i               (weighted centroid)
+    d_kj^w = ‖μ_k^w − μ_j^w‖                                 (centroid distance)
+    """
+    unique = np.unique(labels)
+    K = len(unique)
+    if K < 2:
+        return float("inf")
+
+    # weighted centroids and scatter per cluster
+    mu = {}
+    s  = {}
+    for k in unique:
+        mask = labels == k
+        w_k  = weights[mask]
+        W_k  = w_k.sum()
+        mu_k = (w_k[:, None] * values[mask]).sum(axis=0) / W_k
+        d_k  = np.linalg.norm(values[mask] - mu_k, axis=1)
+        mu[k] = mu_k
+        s[k]  = float((w_k * d_k).sum() / W_k)
+
+    total = 0.0
+    for k in unique:
+        worst = 0.0
+        for j in unique:
+            if j == k:
+                continue
+            d_kj = float(np.linalg.norm(mu[k] - mu[j]))
+            r_kj = (s[k] + s[j]) / max(d_kj, eps)
+            if r_kj > worst:
+                worst = r_kj
+        total += worst
+
+    return float(total / K)
 
 
 def _intra_variance(values: np.ndarray, labels: np.ndarray) -> float:
